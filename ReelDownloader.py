@@ -102,18 +102,35 @@ def rename_and_move_downloaded_file(temp_folder, videos_folder, counter, reel_ur
     # while not is_download_complete(temp_folder):
     #     print("[LOG] Waiting for download to complete...")
     time.sleep(30)  # Check every 30 seconds
-    # Exclude 'null.mp4' from the list
-    files = [f for f in os.listdir(temp_folder) if f.endswith('.mp4') and f != 'null.mp4']
+    # Get all files in temp folder, excluding null.mp4 and hidden files
+    all_files = [f for f in os.listdir(temp_folder) if f != 'null.mp4' and not f.startswith('.')]
+    
+    # Filter for video files: either has .mp4 extension, contains 'mp4' in name, or any file without extension
+    # This catches: proper .mp4 files, malformed extensions like "filename🐮mp4", and files with no extension at all
+    files = []
+    for f in all_files:
+        file_path = os.path.join(temp_folder, f)
+        # Skip directories
+        if os.path.isdir(file_path):
+            continue
+        # Include if: ends with .mp4, contains mp4 in name, or has no extension (no dot in filename)
+        if f.lower().endswith('.mp4') or 'mp4' in f.lower() or '.' not in f:
+            files.append(f)
+    
     print(f"Files in temp folder: {files}")
     if files:
         latest_file = max(files, key=lambda x: os.path.getctime(os.path.join(temp_folder, x)))
         print(f"Latest file: {latest_file}")
         latest_file_path = os.path.join(temp_folder, latest_file)
         print(f"Latest file path: {latest_file_path}")
+        
+        # Ensure the new filename always has proper .mp4 extension
         new_filename = f"Video_{counter}.mp4"
         print(f"New filename: {new_filename}")
         renamed_path = os.path.join(temp_folder, new_filename)
         print(f"Renamed path: {renamed_path}")
+        
+        # Rename/move the file, ensuring it gets proper .mp4 extension
         shutil.move(latest_file_path, renamed_path)
         size_mb = os.path.getsize(renamed_path) / (1024 * 1024)
         print(f"File size (MB): {size_mb}")
